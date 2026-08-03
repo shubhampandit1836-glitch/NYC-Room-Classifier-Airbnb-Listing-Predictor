@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NYC Room Classifier — Airbnb Listing Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<div class="city-grid" aria-hidden="true"></div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <span class="eyebrow">New York City · Airbnb Intelligence</span>
+    <h1 class="title">Room <em>Classifier</em></h1>
+    <p class="subtitle">Enter listing details to predict whether it's an entire home, private room, or shared space — powered by a Random Forest model trained on 48,000+ NYC listings.</p>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- FORM PANEL -->
+  <section class="panel form-panel">
+    <form id="predict-form" novalidate>
+
+      <!-- SECTION 1: LOCATION -->
+      <fieldset class="group">
+        <legend><span class="legend-tag">Location</span></legend>
+        <div class="grid grid-2">
+          <div class="field">
+            <label for="neighbourhood_group">Borough</label>
+            <select id="neighbourhood_group" name="neighbourhood_group" required>
+              <option value="" disabled selected hidden>Select borough</option>
+              <option value="Manhattan">Manhattan</option>
+              <option value="Brooklyn">Brooklyn</option>
+              <option value="Queens">Queens</option>
+              <option value="Bronx">Bronx</option>
+              <option value="Staten Island">Staten Island</option>
+            </select>
+            <span class="error-msg" data-for="neighbourhood_group"></span>
+          </div>
+          <div class="field">
+            <label for="neighbourhood">Neighbourhood</label>
+            <input type="text" id="neighbourhood" name="neighbourhood" list="nbhd-list" required placeholder="e.g. Midtown" autocomplete="off" />
+            <datalist id="nbhd-list">
+              <option value="Midtown"></option>
+              <option value="Harlem"></option>
+              <option value="Upper West Side"></option>
+              <option value="Chelsea"></option>
+              <option value="Hell's Kitchen"></option>
+              <option value="Upper East Side"></option>
+              <option value="East Village"></option>
+              <option value="West Village"></option>
+              <option value="Lower East Side"></option>
+              <option value="Williamsburg"></option>
+              <option value="Bedford-Stuyvesant"></option>
+              <option value="Crown Heights"></option>
+              <option value="Bushwick"></option>
+              <option value="Park Slope"></option>
+              <option value="Astoria"></option>
+              <option value="Long Island City"></option>
+              <option value="Flushing"></option>
+              <option value="Jackson Heights"></option>
+              <option value="Flatbush"></option>
+              <option value="Bronx"></option>
+              <option value="Concourse"></option>
+              <option value="St. George"></option>
+            </datalist>
+            <span class="error-msg" data-for="neighbourhood"></span>
+          </div>
+          <div class="field">
+            <label for="latitude">Latitude</label>
+            <input type="number" id="latitude" name="latitude" step="0.0001" min="40.4" max="41.0" required placeholder="e.g. 40.7549" />
+            <span class="hint">NYC range: 40.4 – 41.0</span>
+            <span class="error-msg" data-for="latitude"></span>
+          </div>
+          <div class="field">
+            <label for="longitude">Longitude</label>
+            <input type="number" id="longitude" name="longitude" step="0.0001" min="-74.3" max="-73.7" required placeholder="e.g. -73.9840" />
+            <span class="hint">NYC range: -74.3 – -73.7</span>
+            <span class="error-msg" data-for="longitude"></span>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- SECTION 2: LISTING DETAILS -->
+      <fieldset class="group">
+        <legend><span class="legend-tag">Listing Details</span></legend>
+        <div class="grid grid-3">
+          <div class="field">
+            <label for="price">Price / night</label>
+            <div class="unit-input">
+              <span class="unit unit-prefix">$</span>
+              <input type="number" id="price" name="price" min="0" max="10000" step="1" required placeholder="150" />
+            </div>
+            <span class="error-msg" data-for="price"></span>
+          </div>
+          <div class="field">
+            <label for="minimum_nights">Minimum nights</label>
+            <input type="number" id="minimum_nights" name="minimum_nights" min="1" max="365" step="1" required placeholder="e.g. 2" />
+            <span class="error-msg" data-for="minimum_nights"></span>
+          </div>
+          <div class="field">
+            <label for="availability_365">Availability / year</label>
+            <div class="unit-input">
+              <input type="number" id="availability_365" name="availability_365" min="0" max="365" step="1" required placeholder="180" />
+              <span class="unit">days</span>
+            </div>
+            <span class="hint">0 – 365</span>
+            <span class="error-msg" data-for="availability_365"></span>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- SECTION 3: HOST & REVIEWS -->
+      <fieldset class="group">
+        <legend><span class="legend-tag">Host & Reviews</span></legend>
+        <div class="grid grid-3">
+          <div class="field">
+            <label for="number_of_reviews">Total reviews</label>
+            <input type="number" id="number_of_reviews" name="number_of_reviews" min="0" step="1" required placeholder="e.g. 45" />
+            <span class="error-msg" data-for="number_of_reviews"></span>
+          </div>
+          <div class="field">
+            <label for="reviews_per_month">Reviews / month</label>
+            <input type="number" id="reviews_per_month" name="reviews_per_month" min="0" max="60" step="0.01" required placeholder="e.g. 1.50" />
+            <span class="error-msg" data-for="reviews_per_month"></span>
+          </div>
+          <div class="field">
+            <label for="calculated_host_listings_count">Host's total listings</label>
+            <input type="number" id="calculated_host_listings_count" name="calculated_host_listings_count" min="1" step="1" required placeholder="e.g. 3" />
+            <span class="error-msg" data-for="calculated_host_listings_count"></span>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-footer">
+        <button type="submit" class="submit-btn" id="submit-btn">
+          <span class="btn-label">Classify listing</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+      </div>
+
+    </form>
+  </section>
+
+  <!-- RESULT PANEL -->
+  <aside class="panel result-panel" aria-live="polite">
+    <div class="result-inner" id="result-inner">
+
+      <!-- IDLE -->
+      <div class="state state-idle" id="state-idle">
+        <div class="idle-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="20" width="48" height="36" rx="3" stroke="currentColor" stroke-width="2"/>
+            <path d="M8 30h48" stroke="currentColor" stroke-width="2"/>
+            <path d="M20 20V14a12 12 0 0124 0v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="32" cy="42" r="4" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+        <p class="idle-label">Awaiting listing data</p>
+        <p class="idle-copy">Fill in the form to classify a NYC Airbnb listing as entire home, private room, or shared space.</p>
+        <div class="idle-stats">
+          <div class="idle-stat">
+            <span class="idle-stat-val">48,895</span>
+            <span class="idle-stat-label">Training listings</span>
+          </div>
+          <div class="idle-stat">
+            <span class="idle-stat-val">85.4%</span>
+            <span class="idle-stat-label">Accuracy</span>
+          </div>
+          <div class="idle-stat">
+            <span class="idle-stat-val">0.735</span>
+            <span class="idle-stat-label">Macro F1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT -->
+      <div class="state state-result" id="state-result" hidden>
+        <p class="result-eyebrow">Predicted room type</p>
+        <div class="result-badge" id="result-badge">—</div>
+        <div class="confidence-row">
+          <span class="confidence-label">Confidence</span>
+          <span class="confidence-val" id="confidence-val">—</span>
+        </div>
+        <p class="result-insight" id="result-insight"></p>
+
+        <!-- PROBABILITY BARS -->
+        <div class="prob-bars" id="prob-bars">
+          <div class="prob-row">
+            <span class="prob-label">Entire home/apt</span>
+            <div class="prob-bar-wrap">
+              <div class="prob-bar" id="bar-entire" style="width:0%"></div>
+            </div>
+            <span class="prob-pct" id="pct-entire">0%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-label">Private room</span>
+            <div class="prob-bar-wrap">
+              <div class="prob-bar" id="bar-private" style="width:0%"></div>
+            </div>
+            <span class="prob-pct" id="pct-private">0%</span>
+          </div>
+          <div class="prob-row">
+            <span class="prob-label">Shared room</span>
+            <div class="prob-bar-wrap">
+              <div class="prob-bar" id="bar-shared" style="width:0%"></div>
+            </div>
+            <span class="prob-pct" id="pct-shared">0%</span>
+          </div>
+        </div>
+
+        <button type="button" class="reset-btn" id="reset-btn">Classify another listing</button>
+      </div>
+
+      <!-- ERROR -->
+      <div class="state state-error" id="state-error" hidden>
+        <div class="error-icon" aria-hidden="true">!</div>
+        <p class="error-title" id="error-title">Something went wrong</p>
+        <p class="error-copy" id="error-copy"></p>
+        <button type="button" class="reset-btn" id="error-retry-btn">Try again</button>
+      </div>
+
+    </div>
+  </aside>
+
+</main>
+
+<footer class="site-footer">
+  <p>Trained on NYC Airbnb Open Data 2019 · 48,895 listings · For demonstration purposes only.</p>
+</footer>
+
+<script src="/static/script.js"></script>
+</body>
+</html>

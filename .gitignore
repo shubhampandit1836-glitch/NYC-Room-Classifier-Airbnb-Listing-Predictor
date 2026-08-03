@@ -1,0 +1,22 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.env
+.venv/
+
+# macOS / Windows system files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor folders
+.vscode/
+.idea/
+
+# Note: We are NOT ignoring .pkl files here because 
+# your Model_Pipeline.pkl needs to be pushed to GitHub 
+# so Render can use it to make predictions.
